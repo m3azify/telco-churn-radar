@@ -264,7 +264,7 @@
     "high": 0.65
   },
   "decision_threshold": 0.5,
-  "trained_at": "2026-11-18T11:54:04+00:00",
+  "trained_at": "2026-11-18T11:57:51+00:00",
   "python_version": "3.15.2",
   "sklearn_version": "1.9.1",
   "pandas_version": "3.1.1",
