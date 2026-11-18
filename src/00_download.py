@@ -74,9 +74,9 @@ def main():
         print("     Download Telco-Customer-Churn.csv and save it to:")
         print("     " + TARGET)
         print("  2) Fully offline (no internet):")
-        print("     python src/00_generate_sample.py")
         print("     python src/00_generate_sample.py --out data/raw/telco_churn.csv")
-        print("     The second command labels the data as synthetic in output.")
+        print("     (Use --force only if the file already exists and you want to replace it.)")
+        print("     The output is SYNTHETIC; label it as such.")
         sys.exit(1)
 
 

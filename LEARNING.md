@@ -39,7 +39,7 @@ Key facts discovered in `src/train.py`:
     train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
 - 80/20 is the standard starting point.
-- `stratify=y` keeps the 26.5% churn rate in both halves. Without it, a
+- `stratify=y` keeps the 26.4% churn rate in both halves. Without it, a
   random split could give the test set 22% or 31% churn and make the
   metrics meaningless.
 - `random_state=42` makes the split reproducible: rerunning gives the
@@ -96,13 +96,16 @@ Actual results (test set, 1,405 customers):
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
 |---|---|---|---|---|---|
 | Dummy (prior) | 0.735 | 0.000 | 0.000 | 0.000 | 0.500 |
-| Logistic Regression | 0.742 | 0.508 | 0.780 | 0.615 | 0.840 |
-| Random Forest (selected) | 0.762 | 0.537 | 0.737 | 0.621 | 0.838 |
+| **Logistic Regression (selected)** | **0.742** | **0.508** | **0.780** | **0.615** | **0.840** |
+| Random Forest | 0.762 | 0.537 | 0.737 | 0.621 | 0.838 |
 
 The winner is chosen by **5-fold cross-validation ROC-AUC on the training
 set** (Random Forest 0.8467 vs Logistic Regression 0.8459), then
-evaluated once on the untouched test set. Selecting on the test set would
-leak information and flatter the result.
+evaluated once on the untouched test set. The RF edge is 0.0008, below
+the 0.005 simplicity tolerance and the ~0.016 fold-to-fold noise, so
+Logistic Regression is preferred for simplicity and interpretability.
+On the test set LR is also slightly higher (0.840 vs 0.838). Selecting
+on the test set would leak information and flatter the result.
 
 ## 9. Cross-validation
 
@@ -113,18 +116,23 @@ new data than a single split. We keep the test set completely out of this.
 
 ## 10. Feature importance
 
-For the selected Random Forest, `feature_importances_` (impurity-based)
-ranks the features. Top 5:
+For the selected Logistic Regression, the coefficients are log-odds on
+standardised features. Largest absolute coefficients:
 
-1. tenure (0.128)
-2. Contract = Month-to-month (0.121)
-3. TotalCharges (0.106)
-4. MonthlyCharges (0.078)
-5. OnlineSecurity = No (0.059)
+1. tenure (-1.28) - longer tenure, lower churn.
+2. Contract = Two year (-0.77) - lower churn.
+3. Contract = Month-to-month (+0.66) - higher churn.
+4. InternetService = Fiber optic (+0.62) - higher churn.
+5. TotalCharges (+0.60) - higher churn *conditional on tenure and monthly
+   charges*; marginally the high-TotalCharges group churns less (18.9%
+   vs 26.4%). This is a collinearity sign flip, not a recommendation to
+   charge more.
 
-Caveat: impurity importance measures how much a feature is used in splits,
-not causation. A feature can rank high because it is a proxy for another.
-Always pair it with business reasoning (section 12).
+Caveat: coefficients are conditional on the other features. A sign can
+flip relative to the marginal churn rate (MonthlyCharges has a negative
+coefficient while its high group churns 35.4%). Always cross-check with
+the marginal rates in section 11. Feature importance shows association,
+not causation.
 
 ## 11. The one-line explanation (occlusion)
 
@@ -136,8 +144,14 @@ A large positive drop means that feature is pushing this customer toward
 churn. We report the top one or two. This is model-agnostic, free, and
 genuinely derived from the model.
 
-Limitation: correlated features (tenure and TotalCharges) share credit, so
-the explanation is a ranking aid, not a causal claim.
+Occlusion is conditional, not causal. It swaps one feature at a time, so
+correlated features share credit and can flip the sign. Verified case:
+OnlineSecurity=Yes churns 14.8% vs 26.4% overall, yet a low-risk profile
+can receive a positive occlusion effect for it. The app cross-checks each
+headline factor against marginal churn: a positive effect that conflicts
+with a lower marginal rate is labelled "conditional" instead of "risk",
+and the contribution table shows a "Marginal churn" column. Treat the
+explanation as a prompt to investigate, not proof of cause.
 
 ## 12. Findings and recommendations
 
@@ -157,7 +171,7 @@ Three concrete actions:
    incentivise automatic payment; both are associated with materially
    lower churn.
 
-Business check: scoring only the top 20% riskiest customers catches 49%
+Business check: scoring only the top 20% riskiest customers catches 50.8%
 of all churners in the test set, so the retention team's time is well
 spent.
 
@@ -193,16 +207,20 @@ A: The dummy baseline gets 73.5% accuracy by predicting "no churn" for
 everyone. We report ROC-AUC and recall to prove the model adds value.
 
 **Q: Why stratify the split?**
-A: Churn is 26.5%. A random split could unbalance the test set and make
+A: Churn is 26.4%. A random split could unbalance the test set and make
 metrics noisy. Stratification preserves the rate.
 
 **Q: How did you pick the model?**
 A: 5-fold CV ROC-AUC on the training set only, then one final evaluation
-on the untouched test set. Random Forest won by 0.0008.
+on the untouched test set. RandomForest's CV edge was +0.0008, below the
+0.005 tolerance and the ~0.016 fold noise, so Logistic Regression was
+preferred for simplicity. LR's test AUC is 0.840 vs RF's 0.838.
 
 **Q: How does the explanation work?**
 A: Occlusion: replace each feature with its training baseline, measure
-the probability drop, report the biggest. Model-agnostic, no SHAP.
+the probability drop, report the biggest. It is cross-checked against
+marginal churn so a conflicting effect is labelled "conditional", not
+"risk". Model-agnostic, no SHAP.
 
 **Q: What would you improve next?**
 A: Calibrate probabilities (Platt/ isotonic), tune the decision threshold

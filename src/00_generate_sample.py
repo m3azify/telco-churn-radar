@@ -5,11 +5,14 @@ is used by default; this script is only for offline demos. Any dataset
 produced here is synthetic and labelled as such in the README.
 
 Run:
-  python src/00_generate_sample.py
-  python src/00_generate_sample.py --out data/raw/telco_churn.csv
+  python src/00_generate_sample.py  # writes data/raw/telco_churn_synthetic.csv
+                                    # (a standalone sample; train.py does NOT read it)
+  python src/00_generate_sample.py --out data/raw/telco_churn.csv  # offline fallback for training
+  python src/00_generate_sample.py --out data/raw/telco_churn.csv --force  # overwrite an existing file
 """
 import argparse
 import os
+import sys
 import numpy as np
 import pandas as pd
 
@@ -114,7 +117,17 @@ def main():
                         help="output CSV path")
     parser.add_argument("--n", type=int, default=2000, help="number of rows")
     parser.add_argument("--seed", type=int, default=42, help="random seed")
+    parser.add_argument("--force", action="store_true",
+                        help="overwrite the output file if it already exists")
     args = parser.parse_args()
+
+    if os.path.exists(args.out) and not args.force:
+        print("WARNING:", args.out, "already exists and may be the real dataset.")
+        print("Refusing to overwrite it. Re-run with --force to replace it.")
+        sys.exit(1)
+
+    if args.force and os.path.exists(args.out):
+        print("WARNING: overwriting existing file", args.out)
 
     df = generate(args.n, args.seed)
     out_path = args.out

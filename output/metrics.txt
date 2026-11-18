@@ -1,6 +1,6 @@
 TELCO CUSTOMER CHURN - TRAINING REPORT
 ============================================================
-Generated: 2026-11-18T11:57:51+00:00
+Generated: 2026-11-18T13:01:24+00:00
 Python: 3.15.2  scikit-learn: 1.9.1  pandas: 3.1.1
 Data: C:\Users\Moaz\freelance-portfolio\proj3\data\raw\telco_churn.csv (7021 rows, churn rate 26.45%)
 Split: 80/20 stratified (train 5616, test 1405)
@@ -15,53 +15,55 @@ SELECTION (5-fold CV ROC-AUC on training set)
 ------------------------------------------------------------
   LogisticRegression   0.8459 (+/- 0.0155)
   RandomForest         0.8467 (+/- 0.0161)
-  Winner: RandomForest
+  CV margin (RF - LR): +0.0008
+  Tolerance: 0.005 (prefer simpler model unless RF wins by more)
+  Winner: LogisticRegression (RF margin +0.0008 <= tolerance 0.005; prefer the simpler model)
 
 SELECTED MODEL TEST METRICS
 ------------------------------------------------------------
-  accuracy   0.7623
-  precision  0.5373
-  recall     0.7366
-  f1         0.6213
-  roc_auc    0.8379
+  accuracy   0.7416
+  precision  0.5079
+  recall     0.7796
+  f1         0.6151
+  roc_auc    0.8397
 
 CONFUSION MATRIX (rows=true, cols=predicted)
 ------------------------------------------------------------
-  [[ 797  236]   (stay)
-   [  98  274]]  (churn)
+  [[ 752  281]   (stay)
+   [  82  290]]  (churn)
 
 CLASSIFICATION REPORT
 ------------------------------------------------------------
               precision    recall  f1-score   support
 
-        Stay       0.89      0.77      0.83      1033
-       Churn       0.54      0.74      0.62       372
+        Stay       0.90      0.73      0.81      1033
+       Churn       0.51      0.78      0.62       372
 
-    accuracy                           0.76      1405
-   macro avg       0.71      0.75      0.72      1405
-weighted avg       0.80      0.76      0.77      1405
+    accuracy                           0.74      1405
+   macro avg       0.70      0.75      0.71      1405
+weighted avg       0.80      0.74      0.76      1405
 
 BUSINESS CHECK
 ------------------------------------------------------------
-  Scoring only the top 20% riskiest customers catches 183 of 372 churners (49.2%).
+  Scoring only the top 20% riskiest customers catches 189 of 372 churners (50.8%).
 
 TOP 15 FEATURES
 ------------------------------------------------------------
-  tenure                             0.1279
-  Contract = Month-to-month          0.1209
-  TotalCharges                       0.1060
-  MonthlyCharges                     0.0775
-  OnlineSecurity = No                0.0595
-  Contract = Two year                0.0575
-  TechSupport = No                   0.0485
-  InternetService = Fiber optic      0.0433
-  PaymentMethod = Electronic check   0.0346
-  Contract = One year                0.0210
-  InternetService = DSL              0.0193
-  OnlineBackup = No                  0.0161
-  OnlineSecurity = Yes               0.0152
-  TechSupport = Yes                  0.0123
-  DeviceProtection = No              0.0119
+  tenure                             -1.2795
+  Contract = Two year                -0.7691
+  Contract = Month-to-month          +0.6633
+  InternetService = Fiber optic      +0.6192
+  TotalCharges                       +0.6025
+  InternetService = DSL              -0.5466
+  MonthlyCharges                     -0.4343
+  PaymentMethod = Electronic check   +0.2409
+  PaperlessBilling = No              -0.2308
+  MultipleLines = No                 -0.2283
+  InternetService = No               -0.2203
+  OnlineSecurity = No internet service -0.2203
+  TechSupport = No internet service  -0.2203
+  DeviceProtection = No internet service -0.2203
+  OnlineBackup = No internet service -0.2203
 
 EDA: churn rate by category
 ------------------------------------------------------------

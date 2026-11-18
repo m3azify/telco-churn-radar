@@ -60,9 +60,31 @@ CATEGORICAL_FEATURES = [
 ]
 ALL_FEATURES = NUMERIC_FEATURES + CATEGORICAL_FEATURES
 
+# A CV edge smaller than this is treated as noise. RandomForest beat
+# LogisticRegression by 0.0008 here, far below this and the ~0.016
+# fold-to-fold standard deviation, so we prefer the simpler model.
+SELECTION_TOLERANCE = 0.005
+
 
 def load_and_clean(path):
     """Load the CSV and apply the cleaning rules. Return X, y and the full df."""
+    path = Path(path)
+    if not path.exists():
+        print("ERROR: dataset not found at", path)
+        print()
+        print("Run:")
+        print("  python src/00_download.py")
+        print()
+        print("If that fails, use one of these fallbacks:")
+        print("  1) Kaggle (needs a free Kaggle account):")
+        print("     https://www.kaggle.com/datasets/blastchar/telco-customer-churn")
+        print("     Download Telco-Customer-Churn.csv and save it to:")
+        print("     " + str(path))
+        print("  2) Fully offline (no internet):")
+        print("     python src/00_generate_sample.py --out data/raw/telco_churn.csv")
+        print("     (Use --force only if the file already exists.)")
+        print("     The output is SYNTHETIC; label it as such.")
+        sys.exit(1)
     print("Loading data from", path)
     df = pd.read_csv(path)
     original_rows = len(df)
@@ -149,7 +171,7 @@ def main():
 
     X, y, df = load_and_clean(DATA_PATH)
 
-    # Stratified split keeps the 26.5% churn rate in both halves.
+    # Stratified split keeps the 26.4% churn rate in both halves.
     print("\nSplitting 80/20 (stratified, random_state=42)...")
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, stratify=y, random_state=42
@@ -188,11 +210,24 @@ def main():
         cv_scores[name] = (float(scores.mean()), float(scores.std()))
         print(f"  {name:20s} {scores.mean():.4f} (+/- {scores.std():.4f})")
 
-    # Tie-break in favour of Logistic Regression: it is easier to explain
-    # to a client, and coefficients double as feature importance.
-    winner_name = max(cv_scores, key=lambda n: cv_scores[n][0])
-    if cv_scores["LogisticRegression"][0] >= cv_scores["RandomForest"][0] - 1e-9:
+    # Prefer the simpler model unless the forest wins by more than the
+    # tolerance. A 0.0008 edge is noise, not evidence.
+    lr_cv = cv_scores["LogisticRegression"][0]
+    rf_cv = cv_scores["RandomForest"][0]
+    margin = rf_cv - lr_cv
+    if margin > SELECTION_TOLERANCE:
+        winner_name = "RandomForest"
+        selection_reason = (
+            f"RF margin +{margin:.4f} > tolerance {SELECTION_TOLERANCE:.3f}"
+        )
+    else:
         winner_name = "LogisticRegression"
+        selection_reason = (
+            f"RF margin +{margin:.4f} <= tolerance {SELECTION_TOLERANCE:.3f}; "
+            "prefer the simpler model"
+        )
+    print(f"  CV margin (RF - LR): {margin:+.4f} (tolerance {SELECTION_TOLERANCE:.3f})")
+    print("  Selection:", selection_reason)
 
     print("\nSelected model:", winner_name)
 
@@ -224,6 +259,29 @@ def main():
     for col in ["Contract", "InternetService", "PaymentMethod", "TechSupport"]:
         rates = df.groupby(col)["Churn"].apply(lambda s: (s == "Yes").mean())
         eda[col] = {str(k): float(v) for k, v in rates.items()}
+
+    # Marginal churn rates used by the app to sanity-check occlusion signs.
+    # Occlusion swaps one feature at a time, so correlated features can flip
+    # the apparent sign; the app cross-checks against these marginal rates.
+    marginal = {
+        "overall_churn_rate": float(y_train.mean()),
+        "categorical": {},
+        "numeric": {},
+    }
+    for col in CATEGORICAL_FEATURES:
+        rates = y_train.groupby(X_train[col]).mean()
+        marginal["categorical"][col] = {
+            str(k): float(v) for k, v in rates.items()
+        }
+    for col in NUMERIC_FEATURES:
+        med = float(X_train[col].median())
+        low_mask = X_train[col] <= med
+        high_mask = X_train[col] > med
+        marginal["numeric"][col] = {
+            "median": med,
+            "low_churn_rate": float(y_train[low_mask].mean()),
+            "high_churn_rate": float(y_train[high_mask].mean()),
+        }
 
     # Feature importance of the selected model.
     preprocessor = selected.named_steps["preprocessor"]
@@ -264,6 +322,9 @@ def main():
         "cv_roc_auc": cv_scores[winner_name][0],
         "cv_roc_auc_std": cv_scores[winner_name][1],
         "cv_scores": {k: {"mean": v[0], "std": v[1]} for k, v in cv_scores.items()},
+        "selection_margin_rf_minus_lr": float(margin),
+        "selection_tolerance": SELECTION_TOLERANCE,
+        "selection_reason": selection_reason,
         "test_metrics": selected_metrics,
         "all_test_metrics": {
             "LogisticRegression": lr_metrics,
@@ -295,6 +356,7 @@ def main():
         "train_rows": int(len(X_train)),
         "test_rows": int(len(X_test)),
         "eda_churn_rate_by": eda,
+        "marginal": marginal,
     }
     with open(MODELS_DIR / "model_meta.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f, indent=2)
@@ -374,7 +436,9 @@ def main():
     lines.append("-" * 60)
     for name, (m, s) in cv_scores.items():
         lines.append(f"  {name:<20s} {m:.4f} (+/- {s:.4f})")
-    lines.append(f"  Winner: {winner_name}")
+    lines.append(f"  CV margin (RF - LR): {margin:+.4f}")
+    lines.append(f"  Tolerance: {SELECTION_TOLERANCE:.3f} (prefer simpler model unless RF wins by more)")
+    lines.append(f"  Winner: {winner_name} ({selection_reason})")
     lines.append("")
     lines.append("SELECTED MODEL TEST METRICS")
     lines.append("-" * 60)
@@ -423,6 +487,8 @@ def main():
     print(fmt(rf_metrics))
     print()
     print("Winner:", winner_name, "| CV AUC:", round(cv_scores[winner_name][0], 4))
+    print("  CV margin (RF - LR):", round(margin, 4), "| tolerance:", SELECTION_TOLERANCE)
+    print("  Selection:", selection_reason)
     print("Test ROC-AUC:", round(selected_metrics["roc_auc"], 4),
           "| Recall:", round(selected_metrics["recall"], 4))
     print("Top 20% capture:", f"{capture_rate*100:.1f}%")

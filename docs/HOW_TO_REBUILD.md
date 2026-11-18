@@ -40,6 +40,9 @@ synthetic in the README):
 
     python src/00_generate_sample.py --out data/raw/telco_churn.csv
 
+(Add `--force` if that file already exists. The generator's default
+output, `telco_churn_synthetic.csv`, is not read by train.py.)
+
 ## 5. Train the model
 
     python src/train.py

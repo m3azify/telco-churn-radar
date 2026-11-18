@@ -113,6 +113,61 @@ def factor_text(column, value, baselines):
     return f"{label} = {value}"
 
 
+def marginal_signal(column, value, meta):
+    """Compare the model's occlusion sign to marginal churn.
+
+    Returns +1 if the feature value is associated with higher churn than
+    the overall rate, -1 if lower, 0 if unknown or neutral. Used to stop
+    the app from calling a protective feature a "risk factor".
+    """
+    marginal = meta.get("marginal") or {}
+    overall = marginal.get("overall_churn_rate")
+    if overall is None:
+        return 0
+    categorical = marginal.get("categorical") or {}
+    numeric = marginal.get("numeric") or {}
+    tolerance = 0.005
+
+    if column in categorical:
+        rate = categorical[column].get(str(value))
+        if rate is None:
+            return 0
+        if rate > overall + tolerance:
+            return 1
+        if rate < overall - tolerance:
+            return -1
+        return 0
+
+    info = numeric.get(column)
+    if not info:
+        return 0
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return 0
+    med = float(info["median"])
+    if v < med:
+        rate = info["low_churn_rate"]
+    elif v > med:
+        rate = info["high_churn_rate"]
+    else:
+        return 0
+    if rate > overall + tolerance:
+        return 1
+    if rate < overall - tolerance:
+        return -1
+    return 0
+
+
+def marginal_label(column, value, meta):
+    signal = marginal_signal(column, value, meta)
+    if signal > 0:
+        return "higher churn"
+    if signal < 0:
+        return "lower churn"
+    return "similar"
+
+
 def explain_one(model, meta, row):
     """Return (one_line_explanation, list_of_(column, delta, value))."""
     feature_order = meta["feature_order"]
@@ -128,13 +183,22 @@ def explain_one(model, meta, row):
         deltas.append((col, base_p - p2, row[col]))
 
     positives = sorted([d for d in deltas if d[1] > 0], key=lambda d: -d[1])
-    if positives:
-        chosen = positives[:2]
-        # drop very small second factors to keep the line honest
+    consistent = [d for d in positives if marginal_signal(d[0], d[2], meta) >= 0]
+    conflicting = [d for d in positives if marginal_signal(d[0], d[2], meta) < 0]
+
+    if consistent:
+        chosen = consistent[:2]
         if len(chosen) == 2 and chosen[1][1] < 0.005:
             chosen = chosen[:1]
         phrase = "Main risk factors: " + "; ".join(
             factor_text(c, v, baselines) for c, _, v in chosen
+        )
+    elif conflicting:
+        chosen = conflicting[:1]
+        phrase = (
+            "Conditional signal only: " + factor_text(chosen[0][0], chosen[0][2], baselines)
+            + " (the model flags it, but this group's marginal churn is lower; "
+            "correlated features can flip the sign)."
         )
     else:
         chosen = [min(deltas, key=lambda d: d[1])]
@@ -155,16 +219,24 @@ def batch_explain(model, meta, X):
         p2 = model.predict_proba(perturbed)[:, 1]
         deltas[:, i] = base - p2
 
-    top_idx = np.argmax(deltas, axis=1)
+    signals = [
+        [marginal_signal(col, X.iloc[r][col], meta) for col in feature_order]
+        for r in range(len(X))
+    ]
+
     factors = []
-    for r, i in enumerate(top_idx):
-        col = feature_order[i]
-        value = X.iloc[r][col]
-        text = factor_text(col, value, baselines)
-        if deltas[r, i] > 0:
-            factors.append("risk: " + text)
+    for r in range(len(X)):
+        positive_idx = [i for i in range(len(feature_order)) if deltas[r, i] > 0]
+        consistent = [i for i in positive_idx if signals[r][i] >= 0]
+        if consistent:
+            i = max(consistent, key=lambda j: deltas[r, j])
+            factors.append("risk: " + factor_text(feature_order[i], X.iloc[r][feature_order[i]], baselines))
+        elif positive_idx:
+            i = max(positive_idx, key=lambda j: deltas[r, j])
+            factors.append("conditional: " + factor_text(feature_order[i], X.iloc[r][feature_order[i]], baselines))
         else:
-            factors.append("protective: " + text)
+            i = int(np.argmin(deltas[r]))
+            factors.append("protective: " + factor_text(feature_order[i], X.iloc[r][feature_order[i]], baselines))
     return factors
 
 
@@ -192,6 +264,20 @@ def clean_uploaded(df, meta):
     for col in meta["features"]["categorical"]:
         if col in out.columns:
             out[col] = out[col].astype(str)
+
+    unknown = []
+    for col in meta["features"]["categorical"]:
+        if col not in out.columns:
+            continue
+        allowed = set(meta["categories"][col])
+        bad = sorted(set(out[col].dropna().astype(str).unique()) - allowed)
+        if bad:
+            unknown.append(f"{col}: {', '.join(bad)} (allowed: {', '.join(sorted(allowed))})")
+    if unknown:
+        raise ValueError(
+            "Unknown category value(s) in the upload. Fix the CSV or use the "
+            "downloaded template.\n" + "\n".join(unknown)
+        )
     return out
 
 
@@ -291,6 +377,13 @@ def main():
                 st.caption(f"Decision threshold: {meta['decision_threshold']:.0%}")
             with col2:
                 st.info(phrase)
+                st.caption(
+                    "Caveat: occlusion is conditional. It swaps one feature at a "
+                    "time, so correlated features (tenure / total charges) can "
+                    "flip the apparent sign. The headline is cross-checked "
+                    "against marginal churn, but treat it as a prompt to "
+                    "investigate, not proof of cause."
+                )
                 with st.expander("Why this score?"):
                     contrib = sorted(deltas, key=lambda d: -d[1])
                     contrib_df = pd.DataFrame(
@@ -298,14 +391,17 @@ def main():
                             {
                                 "Factor": factor_text(c, v, baselines),
                                 "Effect on risk": round(d, 4),
+                                "Marginal churn": marginal_label(c, v, meta),
                             }
                             for c, d, v in contrib
                         ]
                     )
-                    st.dataframe(contrib_df, use_container_width=True, hide_index=True)
+                    st.dataframe(contrib_df, width="stretch", hide_index=True)
                     st.caption(
                         "Effect = change in churn probability if that feature were "
-                        "set to its typical value. Positive pushes risk up."
+                        "set to its typical value. Positive pushes risk up. "
+                        "The headline ignores effects that conflict with marginal "
+                        "churn (marked 'lower churn')."
                     )
         else:
             st.caption("Click 'Score customer' to see a prediction.")
@@ -393,7 +489,12 @@ def main():
             result["Main factor"] = factors
             result = result.sort_values("Churn probability", ascending=False)
 
-            st.dataframe(result, use_container_width=True)
+            st.dataframe(result, width="stretch")
+            st.caption(
+                "Main factor is the largest consistent occlusion effect. "
+                "Effects that conflict with marginal churn are marked "
+                "'conditional' instead of 'risk'."
+            )
             st.download_button(
                 "Download scored CSV",
                 result.to_csv(index=False).encode("utf-8"),
