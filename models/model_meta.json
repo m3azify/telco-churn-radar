@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "model_name": "RandomForest",
+  "selection_metric": "5-fold CV ROC-AUC on the training set",
+  "cv_roc_auc": 0.846744755581064,
+  "cv_roc_auc_std": 0.016084696876735718,
+  "cv_scores": {
+    "LogisticRegression": {
+      "mean": 0.8459248372104724,
+      "std": 0.015458333990218377
+    },
+    "RandomForest": {
+      "mean": 0.846744755581064,
+      "std": 0.016084696876735718
+    }
+  },
+  "test_metrics": {
+    "model": "RandomForest",
+    "accuracy": 0.7622775800711744,
+    "precision": 0.5372549019607843,
+    "recall": 0.7365591397849462,
+    "f1": 0.6213151927437641,
+    "roc_auc": 0.8379250850950879
+  },
+  "all_test_metrics": {
+    "LogisticRegression": {
+      "model": "LogisticRegression",
+      "accuracy": 0.7416370106761566,
+      "precision": 0.5078809106830122,
+      "recall": 0.7795698924731183,
+      "f1": 0.6150583244962884,
+      "roc_auc": 0.8397232718150497
+    },
+    "RandomForest": {
+      "model": "RandomForest",
+      "accuracy": 0.7622775800711744,
+      "precision": 0.5372549019607843,
+      "recall": 0.7365591397849462,
+      "f1": 0.6213151927437641,
+      "roc_auc": 0.8379250850950879
+    }
+  },
+  "dummy_test_metrics": {
+    "model": "DummyClassifier (prior)",
+    "accuracy": 0.7352313167259786,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "roc_auc": 0.5
+  },
+  "top_20pct_churn_capture": 0.49193548387096775,
+  "top_20pct_churners_caught": 183,
+  "top_20pct_customers_scored": 281,
+  "total_test_churners": 372,
+  "features": {
+    "numeric": [
+      "tenure",
+      "MonthlyCharges",
+      "TotalCharges"
+    ],
+    "categorical": [
+      "gender",
+      "SeniorCitizen",
+      "Partner",
+      "Dependents",
+      "PhoneService",
+      "MultipleLines",
+      "InternetService",
+      "OnlineSecurity",
+      "OnlineBackup",
+      "DeviceProtection",
+      "TechSupport",
+      "StreamingTV",
+      "StreamingMovies",
+      "Contract",
+      "PaperlessBilling",
+      "PaymentMethod"
+    ]
+  },
+  "feature_order": [
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "gender",
+    "SeniorCitizen",
+    "Partner",
+    "Dependents",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod"
+  ],
+  "categories": {
+    "gender": [
+      "Female",
+      "Male"
+    ],
+    "SeniorCitizen": [
+      "No",
+      "Yes"
+    ],
+    "Partner": [
+      "No",
+      "Yes"
+    ],
+    "Dependents": [
+      "No",
+      "Yes"
+    ],
+    "PhoneService": [
+      "No",
+      "Yes"
+    ],
+    "MultipleLines": [
+      "No",
+      "No phone service",
+      "Yes"
+    ],
+    "InternetService": [
+      "DSL",
+      "Fiber optic",
+      "No"
+    ],
+    "OnlineSecurity": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "OnlineBackup": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "DeviceProtection": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "TechSupport": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "StreamingTV": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "StreamingMovies": [
+      "No",
+      "No internet service",
+      "Yes"
+    ],
+    "Contract": [
+      "Month-to-month",
+      "One year",
+      "Two year"
+    ],
+    "PaperlessBilling": [
+      "No",
+      "Yes"
+    ],
+    "PaymentMethod": [
+      "Bank transfer (automatic)",
+      "Credit card (automatic)",
+      "Electronic check",
+      "Mailed check"
+    ]
+  },
+  "baselines": {
+    "tenure": 29.0,
+    "MonthlyCharges": 70.45,
+    "TotalCharges": 1391.4,
+    "gender": "Female",
+    "SeniorCitizen": "No",
+    "Partner": "No",
+    "Dependents": "No",
+    "PhoneService": "Yes",
+    "MultipleLines": "No",
+    "InternetService": "Fiber optic",
+    "OnlineSecurity": "No",
+    "OnlineBackup": "No",
+    "DeviceProtection": "No",
+    "TechSupport": "No",
+    "StreamingTV": "No",
+    "StreamingMovies": "No",
+    "Contract": "Month-to-month",
+    "PaperlessBilling": "Yes",
+    "PaymentMethod": "Electronic check"
+  },
+  "importance_kind": "impurity importance",
+  "top_features": [
+    {
+      "feature": "tenure",
+      "value": 0.12794618330497312
+    },
+    {
+      "feature": "Contract = Month-to-month",
+      "value": 0.12091892353012829
+    },
+    {
+      "feature": "TotalCharges",
+      "value": 0.10603270445125595
+    },
+    {
+      "feature": "MonthlyCharges",
+      "value": 0.07753043744753908
+    },
+    {
+      "feature": "OnlineSecurity = No",
+      "value": 0.05946320151981443
+    },
+    {
+      "feature": "Contract = Two year",
+      "value": 0.05747966512385433
+    },
+    {
+      "feature": "TechSupport = No",
+      "value": 0.04846321144170284
+    },
+    {
+      "feature": "InternetService = Fiber optic",
+      "value": 0.04326729748980311
+    },
+    {
+      "feature": "PaymentMethod = Electronic check",
+      "value": 0.03455416353054315
+    },
+    {
+      "feature": "Contract = One year",
+      "value": 0.020958530565215808
+    },
+    {
+      "feature": "InternetService = DSL",
+      "value": 0.019315439139029566
+    },
+    {
+      "feature": "OnlineBackup = No",
+      "value": 0.016062381737573322
+    },
+    {
+      "feature": "OnlineSecurity = Yes",
+      "value": 0.01519744714649362
+    },
+    {
+      "feature": "TechSupport = Yes",
+      "value": 0.012279223619535167
+    },
+    {
+      "feature": "DeviceProtection = No",
+      "value": 0.011870604562691522
+    }
+  ],
+  "risk_tiers": {
+    "low": 0.35,
+    "high": 0.65
+  },
+  "decision_threshold": 0.5,
+  "trained_at": "2026-11-18T11:54:04+00:00",
+  "python_version": "3.15.2",
+  "sklearn_version": "1.9.1",
+  "pandas_version": "3.1.1",
+  "numpy_version": "2.5.5",
+  "data_rows": 7021,
+  "churn_rate": 0.2644922375729953,
+  "train_rows": 5616,
+  "test_rows": 1405,
+  "eda_churn_rate_by": {
+    "Contract": {
+      "Month-to-month": 0.42642097067220347,
+      "One year": 0.11269517990495587,
+      "Two year": 0.02831858407079646
+    },
+    "InternetService": {
+      "DSL": 0.1889210417527904,
+      "Fiber optic": 0.41779935275080904,
+      "No": 0.07208994708994709
+    },
+    "PaymentMethod": {
+      "Bank transfer (automatic)": 0.16709844559585493,
+      "Credit card (automatic)": 0.15243101182654403,
+      "Electronic check": 0.45146248410343365,
+      "Mailed check": 0.18922305764411027
+    },
+    "TechSupport": {
+      "No": 0.415007215007215,
+      "No internet service": 0.07208994708994709,
+      "Yes": 0.15166340508806261
+    }
+  }
+}

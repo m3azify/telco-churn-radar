@@ -1,0 +1,16 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Local tooling / temp
+.tmp/
+.backups/
+
+# OS
+.DS_Store
+Thumbs.db

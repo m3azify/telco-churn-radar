@@ -1,0 +1,86 @@
+TELCO CUSTOMER CHURN - TRAINING REPORT
+============================================================
+Generated: 2026-11-18T11:54:04+00:00
+Python: 3.15.2  scikit-learn: 1.9.1  pandas: 3.1.1
+Data: C:\Users\Moaz\freelance-portfolio\proj3\data\raw\telco_churn.csv (7021 rows, churn rate 26.45%)
+Split: 80/20 stratified (train 5616, test 1405)
+
+MODEL COMPARISON (test set)
+------------------------------------------------------------
+DummyClassifier (prior)      acc=0.735  prec=0.000  rec=0.000  f1=0.000  auc=0.500
+LogisticRegression           acc=0.742  prec=0.508  rec=0.780  f1=0.615  auc=0.840
+RandomForest                 acc=0.762  prec=0.537  rec=0.737  f1=0.621  auc=0.838
+
+SELECTION (5-fold CV ROC-AUC on training set)
+------------------------------------------------------------
+  LogisticRegression   0.8459 (+/- 0.0155)
+  RandomForest         0.8467 (+/- 0.0161)
+  Winner: RandomForest
+
+SELECTED MODEL TEST METRICS
+------------------------------------------------------------
+  accuracy   0.7623
+  precision  0.5373
+  recall     0.7366
+  f1         0.6213
+  roc_auc    0.8379
+
+CONFUSION MATRIX (rows=true, cols=predicted)
+------------------------------------------------------------
+  [[ 797  236]   (stay)
+   [  98  274]]  (churn)
+
+CLASSIFICATION REPORT
+------------------------------------------------------------
+              precision    recall  f1-score   support
+
+        Stay       0.89      0.77      0.83      1033
+       Churn       0.54      0.74      0.62       372
+
+    accuracy                           0.76      1405
+   macro avg       0.71      0.75      0.72      1405
+weighted avg       0.80      0.76      0.77      1405
+
+BUSINESS CHECK
+------------------------------------------------------------
+  Scoring only the top 20% riskiest customers catches 183 of 372 churners (49.2%).
+
+TOP 15 FEATURES
+------------------------------------------------------------
+  tenure                             0.1279
+  Contract = Month-to-month          0.1209
+  TotalCharges                       0.1060
+  MonthlyCharges                     0.0775
+  OnlineSecurity = No                0.0595
+  Contract = Two year                0.0575
+  TechSupport = No                   0.0485
+  InternetService = Fiber optic      0.0433
+  PaymentMethod = Electronic check   0.0346
+  Contract = One year                0.0210
+  InternetService = DSL              0.0193
+  OnlineBackup = No                  0.0161
+  OnlineSecurity = Yes               0.0152
+  TechSupport = Yes                  0.0123
+  DeviceProtection = No              0.0119
+
+EDA: churn rate by category
+------------------------------------------------------------
+  Contract:
+    Month-to-month                42.6%
+    One year                      11.3%
+    Two year                       2.8%
+  InternetService:
+    Fiber optic                   41.8%
+    DSL                           18.9%
+    No                             7.2%
+  PaymentMethod:
+    Electronic check              45.1%
+    Mailed check                  18.9%
+    Bank transfer (automatic)     16.7%
+    Credit card (automatic)       15.2%
+  TechSupport:
+    No                            41.5%
+    Yes                           15.2%
+    No internet service            7.2%
+
+NOTE: feature importance shows association, not causation.
