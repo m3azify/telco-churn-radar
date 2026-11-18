@@ -7,3 +7,6 @@ font = "sans serif"
 
 [server]
 headless = false
+# Streamlit Cloud has no credentials file; without this the first-run email
+# prompt blocks startup and the health check fails.
+showEmailPrompt = false

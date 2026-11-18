@@ -6,7 +6,7 @@ web app. Built as a portfolio piece for Moaz (final-year CS & Data
 Science, Alexandria) to show clients that he can take a problem from
 raw CSV to a deployed AI product.
 
-Live demo: (deploy URL goes here) — not deployed yet; follow `docs/DEPLOY.md` (about 10 minutes, free tier).
+Live demo: https://telco-churn-radar.streamlit.app
 
 ## Results
 
