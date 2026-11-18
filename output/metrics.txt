@@ -1,6 +1,6 @@
 TELCO CUSTOMER CHURN - TRAINING REPORT
 ============================================================
-Generated: 2026-11-18T13:01:24+00:00
+Generated: 2026-11-18T13:45:30+00:00
 Python: 3.15.2  scikit-learn: 1.9.1  pandas: 3.1.1
 Data: C:\Users\Moaz\freelance-portfolio\proj3\data\raw\telco_churn.csv (7021 rows, churn rate 26.45%)
 Split: 80/20 stratified (train 5616, test 1405)

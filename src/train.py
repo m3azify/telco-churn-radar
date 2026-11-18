@@ -218,12 +218,12 @@ def main():
     if margin > SELECTION_TOLERANCE:
         winner_name = "RandomForest"
         selection_reason = (
-            f"RF margin +{margin:.4f} > tolerance {SELECTION_TOLERANCE:.3f}"
+            f"RF margin {margin:+.4f} > tolerance {SELECTION_TOLERANCE:.3f}"
         )
     else:
         winner_name = "LogisticRegression"
         selection_reason = (
-            f"RF margin +{margin:.4f} <= tolerance {SELECTION_TOLERANCE:.3f}; "
+            f"RF margin {margin:+.4f} <= tolerance {SELECTION_TOLERANCE:.3f}; "
             "prefer the simpler model"
         )
     print(f"  CV margin (RF - LR): {margin:+.4f} (tolerance {SELECTION_TOLERANCE:.3f})")
@@ -487,7 +487,7 @@ def main():
     print(fmt(rf_metrics))
     print()
     print("Winner:", winner_name, "| CV AUC:", round(cv_scores[winner_name][0], 4))
-    print("  CV margin (RF - LR):", round(margin, 4), "| tolerance:", SELECTION_TOLERANCE)
+    print("  CV margin (RF - LR):", f"{margin:+.4f}", "| tolerance:", SELECTION_TOLERANCE)
     print("  Selection:", selection_reason)
     print("Test ROC-AUC:", round(selected_metrics["roc_auc"], 4),
           "| Recall:", round(selected_metrics["recall"], 4))

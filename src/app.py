@@ -261,6 +261,18 @@ def clean_uploaded(df, meta):
     out.loc[mask, "TotalCharges"] = out.loc[mask, "tenure"] * out.loc[mask, "MonthlyCharges"]
     out["TotalCharges"] = out["TotalCharges"].fillna(0.0)
 
+    missing = []
+    for col in meta["features"]["categorical"]:
+        if col in out.columns:
+            n_missing = int(out[col].isna().sum())
+            if n_missing:
+                missing.append(f"{col}: {n_missing} missing value(s)")
+    if missing:
+        raise ValueError(
+            "Missing category value(s) in the upload. Fix the CSV or use the "
+            "downloaded template.\n" + "\n".join(missing)
+        )
+
     for col in meta["features"]["categorical"]:
         if col in out.columns:
             out[col] = out[col].astype(str)
@@ -491,9 +503,12 @@ def main():
 
             st.dataframe(result, width="stretch")
             st.caption(
-                "Main factor is the largest consistent occlusion effect. "
-                "Effects that conflict with marginal churn are marked "
-                "'conditional' instead of 'risk'."
+                "Caveat: occlusion is conditional. It swaps one feature at a "
+                "time, so correlated features (tenure / total charges) can flip "
+                "the apparent sign. The main factor is cross-checked against "
+                "marginal churn; a conflicting effect is marked 'conditional' "
+                "rather than 'risk'. Treat it as a prompt to investigate, not "
+                "proof of cause."
             )
             st.download_button(
                 "Download scored CSV",
